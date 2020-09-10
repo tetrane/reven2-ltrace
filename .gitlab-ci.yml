@@ -1,0 +1,20 @@
+stages:
+  - lint
+  - package
+
+flake8:
+  stage: lint
+  image: "python:3"
+  before_script:
+  - pip install flake8
+  script:
+  - flake8 .
+
+wheel:
+  stage: package
+  image: "python:3"
+  script:
+  - python setup.py bdist_wheel
+  artifacts:
+    paths:
+    - dist/*.whl
