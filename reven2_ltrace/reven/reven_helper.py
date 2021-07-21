@@ -26,7 +26,9 @@ def symbol_name_after(point):
             raise RuntimeError("Cannot resolve ossi location")
         if location.symbol is None:
             raise RuntimeError("Ossi location is not linked to a symbol")
-        return location.symbol.name
+        if location.symbol.prototype is not None:
+            return location.symbol.prototype
+        return location.symbol.source_name
     except RuntimeError as e:
         printerr("WAR: No symbol at #{}: {}".format(point.id, e))
         return None
