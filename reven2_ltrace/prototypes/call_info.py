@@ -34,7 +34,16 @@ class CallInfo(object):
         self.ltrace_extra_info = LTraceConf(ltrace_extra_conf)
 
     @functools.lru_cache(maxsize=2048)
-    def resolve_proto(self, symbol_name):
+    def resolve_proto(self, symbol):
+        # demangled
+        prototype = symbol.prototype
+        if prototype is not None:  # assume demangled proto
+            proto_str = prototype + ";"
+            maybe_proto = clang_parse(self.proto_parser, proto_str, None)
+            if maybe_proto is not None:
+                return maybe_proto
+
+        symbol_name = symbol.name
         # ltrace-extra.conf
         maybe_proto = self.ltrace_extra_info.get_proto(symbol_name)
         if maybe_proto is not None:
@@ -63,12 +72,5 @@ class CallInfo(object):
         maybe_proto = self.ltrace_info.get_proto(func_name)
         if maybe_proto is not None:
             return maybe_proto
-
-        # demangled
-        if "(" in func_name:  # assume demangled proto
-            proto_str = func_name + ";"
-            maybe_proto = clang_parse(self.proto_parser, proto_str, callconv)
-            if maybe_proto is not None:
-                return maybe_proto
 
         return None

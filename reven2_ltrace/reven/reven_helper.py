@@ -19,16 +19,14 @@ def read_reg_after(point, reg, raw=True):
     return point.context_after().read(reg, raw=raw)
 
 
-def symbol_name_after(point):
+def symbol_after(point):
     try:
         location = point.context_after().ossi.location()
         if location is None:
             raise RuntimeError("Cannot resolve ossi location")
         if location.symbol is None:
             raise RuntimeError("Ossi location is not linked to a symbol")
-        if location.symbol.prototype is not None:
-            return location.symbol.prototype
-        return location.symbol.source_name
+        return location.symbol
     except RuntimeError as e:
         printerr("WAR: No symbol at #{}: {}".format(point.id, e))
         return None
