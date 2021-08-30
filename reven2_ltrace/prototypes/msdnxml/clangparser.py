@@ -1,69 +1,53 @@
 from sys import stderr
-import clang.cindex
 from pcpp import Preprocessor
 from io import StringIO
-import re
+
+from reven2.preview.prototypes import RevenPrototypes
 
 from .. import prototype
 from . import cenv
 
 
-clang_version = "7"
-clang_library_file = "/usr/lib/llvm-{v}/lib/libclang-{v}.so.1".format(
-    v=clang_version
-)
-
-clang.cindex.Config.set_library_file(clang_library_file)
-
-
 class Diagnostic(object):
     def __init__(self, tu):
+        self._unknown_types = tu.unknown_types
         self._diagnostics = tu.diagnostics
 
     def unknown_types(self):
-        types = []
-
-        for diag in self._diagnostics:
-            pattern = re.compile(r"unknown type name '(.*)'")
-            m = pattern.fullmatch(diag.spelling)
-            if m:
-                types.append(m.group(1))
-
-        return types
+        return self._unknown_types
 
 
 class ClangParser(object):
-    def __init__(self, typesconf_file):
+    def __init__(self, srv, typesconf_file):
         self._cenv = cenv.cenv_from_typesconf_file(typesconf_file)
-        self._index = clang.cindex.Index.create()
+        self._reven = srv
         self._extra_typedefs = []
 
     def add_typedef(self, alias, real_type):
         self._extra_typedefs.append((alias, real_type))
 
     def parse_type(self, type_node):
-        t = prototype.PrototypeType()
-        t.name = type_node.spelling
-        t.real_type = type_node.get_canonical().spelling
-        t.size = type_node.get_size()
-        t.format = self._cenv.type_format(t.name, t.real_type)
-        return t
+        return prototype.PrototypeType(
+            name=type_node.name,
+            real_type=type_node.canonical,
+            size=type_node.size,
+            format=self._cenv.type_format(type_node.name, type_node.canonical),
+        )
 
-    def parse_arg(self, arg_node):
-        arg_name = arg_node.spelling
-        arg_type = self.parse_type(arg_node.type)
-        return prototype.PrototypeArgument(arg_name, arg_type)
+    def parse_arg(self, arg):
+        return prototype.PrototypeArgument(
+            name=arg.name, type=self.parse_type(arg.type)
+        )
 
-    def parse_func(self, func_node, proto):
-        proto.name = func_node.spelling
-        proto.return_type = self.parse_type(func_node.result_type)
-        for arg_node in func_node.get_arguments():
-            proto.add_argument(self.parse_arg(arg_node))
+    def parse_func(self, f, proto):
+        proto.name = f.name
+        proto.return_type = self.parse_type(f.return_type)
+        for arg in f.parameters:
+            proto.add_argument(self.parse_arg(arg))
 
     def parse_tu(self, tu, proto):
-        for node in tu.cursor.get_children():
-            if node.kind is clang.cindex.CursorKind.FUNCTION_DECL:
-                self.parse_func(node, proto)
+        for f in tu.functions:
+            self.parse_func(f, proto)
 
     def patch_sources(self, proto_src):
         return "{defines}\n{typedefs}\n{extra_typedefs}\n{proto}\n".format(
@@ -90,9 +74,7 @@ class ClangParser(object):
         proto = prototype.Prototype(proto_src, callconv)
         src = self.preprocess(proto_src)
 
-        tu = self._index.parse(
-            "proto.hpp", unsaved_files=[("proto.hpp", src)], options=6
-        )
+        tu = RevenPrototypes(self._reven).parse_translation_unit(src)
 
         self.parse_tu(tu, proto)
         self.proto = proto
@@ -102,14 +84,15 @@ class ClangParser(object):
 
 
 class ProtoStrParser:
-    def __init__(self, typesconf_file):
+    def __init__(self, srv, typesconf_file):
+        self._reven_server = srv
         self._typesconf_file = typesconf_file
 
     def clang(self):
-        return ClangParser(self._typesconf_file)
+        return ClangParser(self._reven_server, self._typesconf_file)
 
     def parse_proto(self, proto_str, callconv=None):
-        clang_parser = ClangParser(self._typesconf_file)
+        clang_parser = ClangParser(self._reven_server, self._typesconf_file)
         clang_parser.parse_proto(proto_str, callconv)
         return clang_parser
 
