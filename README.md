@@ -6,7 +6,6 @@ This script can only be run on Debian Buster.
 ## Installing
 
 ```
-# apt install libclang1-7
 $ python3 -m pip install -r requirements.txt
 ```
 
