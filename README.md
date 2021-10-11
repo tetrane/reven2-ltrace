@@ -1,8 +1,3 @@
-## Prerequisite
-
-This script can only be run on Debian Buster.
-
-
 ## Installing
 
 ```
