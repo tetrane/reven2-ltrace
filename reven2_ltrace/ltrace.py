@@ -29,7 +29,7 @@ from .resources import (
 
 def ltrace_pretty_proto(srv, binary_path, from_context=None, to_context=None):
     ltracer = CallInfo(
-        msdn_xml, msdn_typedefs_conf, ltrace_conf, ltrace_extra_conf
+        srv, msdn_xml, msdn_typedefs_conf, ltrace_conf, ltrace_extra_conf
     )
 
     for tr in ltrace(srv.trace, binary_path, from_context, to_context):
@@ -80,7 +80,7 @@ def print_ltrace(
     """
     print_info = get_print_func(pretty_mode)
     ltracer = CallInfo(
-        msdn_xml, msdn_typedefs_conf, ltrace_conf, ltrace_extra_conf
+        srv, msdn_xml, msdn_typedefs_conf, ltrace_conf, ltrace_extra_conf
     )
 
     for tr in ltrace(srv.trace, binary_path, from_context, to_context):

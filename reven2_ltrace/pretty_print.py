@@ -38,11 +38,11 @@ def dummy_proto(tr, symbol_name):
 
 
 def get_pretty_proto(tr, info):
-    symbol_name = rvnh.symbol_name_after(tr)
-    if symbol_name is None:
+    symbol = rvnh.symbol_after(tr)
+    if symbol is None:
         proto = dummy_proto(tr, "<unknown>")
     else:
-        proto = info.resolve_proto(symbol_name) or dummy_proto(tr, symbol_name)
+        proto = info.resolve_proto(symbol) or dummy_proto(tr, symbol.name)
     return PrettyProto(tr, proto)
 
 
