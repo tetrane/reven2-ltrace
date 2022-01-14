@@ -1,7 +1,7 @@
 """Argument formatting
 """
 
-import struct
+from reven2.types import FixedWidthInteger, Signedness, Endianness
 from .reven import reven_helper as rvnh
 
 ltraceconf_formats = {
@@ -41,15 +41,13 @@ typesconf_formats = {
 
 
 def as_int_value(raw_value):
-    if len(raw_value) == 8:
-        return struct.unpack("<q", raw_value)[0]
-    return struct.unpack("<i", raw_value)[0]
+    return FixedWidthInteger(len(raw_value), Signedness.Signed,
+                             Endianness.Little).parse(raw_value)
 
 
 def as_uint_value(raw_value):
-    if len(raw_value) == 8:
-        return struct.unpack("<Q", raw_value)[0]
-    return struct.unpack("<I", raw_value)[0]
+    return FixedWidthInteger(len(raw_value), Signedness.Unsigned,
+                             Endianness.Little).parse(raw_value)
 
 
 def format_value(raw_value, fmt, point):
