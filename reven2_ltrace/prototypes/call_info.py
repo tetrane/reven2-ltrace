@@ -36,9 +36,9 @@ class CallInfo(object):
     @functools.lru_cache(maxsize=2048)
     def resolve_proto(self, symbol):
         # demangled
-        prototype = symbol.prototype
-        if prototype is not None:  # assume demangled proto
-            proto_str = prototype + ";"
+        demangled_name = symbol.demangled_name
+        if demangled_name is not None:  # assume demangled proto
+            proto_str = demangled_name + ";"
             maybe_proto = clang_parse(self.proto_parser, proto_str, None)
             if maybe_proto is not None:
                 return maybe_proto
